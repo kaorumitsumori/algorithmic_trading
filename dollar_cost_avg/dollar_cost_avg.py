@@ -26,11 +26,11 @@ def check_balance(ex):
         balance = ex.fetch_balance()
     except Exception as e:
         print(datetime.now(), e)
-    # else:
-    available_btc = float(balance['BTC']['total'])
-    available_jpy = float(balance['JPY']['total'])
-    print('available_btc: ', available_btc)
-    print('available_jpy: ', available_jpy)
+    else:
+        available_btc = float(balance['BTC']['total'])
+        available_jpy = float(balance['JPY']['total'])
+        print('available_btc: ', available_btc)
+        print('available_jpy: ', available_jpy)
     return available_btc, available_jpy
 
 
