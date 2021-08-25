@@ -1,4 +1,4 @@
-# algorithmic_trading
+# dollar_cost_averaging
 
 
 ## フォルダ構成とファイル名
