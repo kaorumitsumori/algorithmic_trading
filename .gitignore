@@ -4,8 +4,8 @@
 !*/
 
 # ignore certain directory
-/test/
 sandbox/
+__pycache__/
 .vscode/
 .venv/
 
