@@ -1,11 +1,12 @@
 # ml_tutorial
+WIP..
 quoted from
 https://github.com/richmanbtc/mlbot_tutorial/blob/master/work/tutorial.ipynb
 
 ## フォルダ構成とファイル名
-- 
-    - 
-    - 
+-
+    -
+    -
 
 
 ## ファイル説明
