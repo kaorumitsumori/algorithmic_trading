@@ -1,139 +1,75 @@
+from pandas.core.algorithms import value_counts
 import requests
-import json
-from datetime import datetime
-import time
+import numpy as np
 import pandas as pd
-import os
-import pybitflyer
-
-api = pybitflyer.API()
-base_url = "https://api.bitflyer.jp"
-endpoint = "/v1/board?product_code="
-pair = "BTC_JPY"
-
-data = requests.get(base_url + endpoint + pair, timeout=5)
+import matplotlib.pyplot as plt
 
 
-# スリープ秒数
-SLEEP_T = 1
-
-# データ保存の時間[s]
-DATA_T = 1800
-
-# boardデータ取得関数
-
-base_url = "https://api.bitflyer.jp"
-endpoint = "/v1/board?product_code="
-
-# 対象
-pair = "BTC_JPY"
+ex = 'bitflyer'
+pair = 'btcjpy'
+periods_hrs = 1
+periods = int(3600 * periods_hrs)
+after = 1514764800
+URL = f'https://api.cryptowat.ch/markets/{ex}/{pair}/ohlc?periods={periods}&after={after}'
 
 
-def get_board():
-    # board = api.board(product_code=source)
-    data = requests.get(base_url + endpoint + pair, timeout=5)
-    board = json.loads(data.text)
-    dict_data = {}
-    dict_data['time'] = datetime.now()
-    mid_price = {'mid_price': board['mid_price']}
-    dict_data.update(mid_price)
-    asks_price = {'asks_price_{}'.format(
-        i): board["asks"][i]["price"] for i in range(10)}
-    dict_data.update(asks_price)
-    asks_size = {'asks_size_{}'.format(
-        i): board["asks"][i]["size"] for i in range(10)}
-    dict_data.update(asks_size)
-    bids_price = {'bids_price_{}'.format(
-        i): board["bids"][i]["price"] for i in range(10)}
-    dict_data.update(bids_price)
-    bids_size = {'bids_size_{}'.format(
-        i): board["bids"][i]["size"] for i in range(10)}
-    dict_data.update(bids_size)
-
-    return pd.Series(dict_data)
+cols = [
+    'CloseTime',
+    'OpenPrice',
+    'HighPrice',
+    'LowPrice',
+    'ClosePrice',
+    'Volume',
+    'QuoteVolume',
+]
 
 
-def get_btc_board():
-    # １秒待ってのループ処理
-    print("start")
-    init_time = datetime.now()
-    end_time = datetime.now()
-    main_list = []
-    # 1hで1つのdfを作成
-    while (end_time - init_time).seconds < DATA_T:
-        try:
-            dict_data = get_board()
-            main_list.append(dict_data)
-        except Exception as e:
-            print("exception: ", e.args)
-        # sleep
-        time.sleep(SLEEP_T)
-        end_time = datetime.now()
-
-    df_data = pd.concat(main_list, axis=1).T
-
-    # 何時から何時までの板情報かを記載した
-    df_data.to_csv(
-        './data/hour_bitcoin_day_{}_init_{}_{}_end_{}_{}.csv'.format(
-            init_time.day,
-            init_time.hour,
-            init_time.minute,
-            end_time.hour,
-            init_time.minute
-        )
-    )
-    print("end")
+data = requests.get(URL).json()
+past_data = data['result'][f'{periods}']
+past_data_df = pd.DataFrame(past_data, columns=cols)
+past_data_df['CloseTime'] = pd.to_datetime(past_data_df['CloseTime'], unit='s')
+past_data_df.set_index('CloseTime', inplace=True)
 
 
-# 指値買い注文
-def buy_btc_lmt(amt, prc):
-    amt = int(amt*100000000)/100000000
-    buy = api.sendchildorder(
-        product_code="BTC_JPY",
-        child_order_type="LIMIT",
-        price=prc, side="BUY",
-        size=amt,
-        minute_to_expire=10,
-        time_in_force="GTC"
-    )
-    print("BUY ", amt, "BTC")
-    print(buy)
+def add_past_cl_pct_chg(df):
+    for dist in range(1, 3):
+        df[f'cl_pct_chg_past_{int(60*periods_hrs*dist)}_mins'] = \
+            df['ClosePrice'].pct_change(dist)
+    return df
 
 
-# 指値売り注文
-def sell_btc_lmt(amt, prc):
-    amt = int(amt*100000000)/100000000
-    sell = api.sendchildorder(
-        product_code="BTC_JPY",
-        child_order_type="LIMIT",
-        price=prc,
-        side="SELL",
-        size=amt,
-        minute_to_expire=10,
-        time_in_force="GTC"
-    )
-    print("SELL ", amt, "BTC")
-    print(sell)
+def add_target(df):
+    df[f'cl_pct_chg_coming_{int(60*periods_hrs)}_mins'] = \
+        past_data_df[
+            f'cl_pct_chg_past_{int(60*periods_hrs)}_mins'].shift(-1)
+    return df
 
 
-# の時はロング
-def long():
-    if r > 0:
-        # JPY資産のうちどれだけBTCに変えるかを計算
-        amt_jpy = compute(r, th1, th2)*jpy
-        amt_btc = amt_jpy/ltps[itr-1]
-        # 購入量が最小取引額を超えていれば指値買い
-        if amt_btc > min_btc:
-            buy_btc_lmt(amt_btc, ltps[itr-1])
+past_data_df = add_past_cl_pct_chg(past_data_df)
+past_data_df = add_target(past_data_df)
+
+# past_data_df.head(20).to_csv('past_data_df.csv')
+past_data_df.to_csv('dataset.csv')
 
 
-if __name__ == '__main__':
-    # カレントディレクトリー以下にdataを作成
-    if not os.path.exists('./data'):
-        os.mkdir('./data')
-    # ループ処理
-    while True:
-        try:
-            get_btc_board()
-        except Exception as e:
-            print("exception: ", e.args)
+# 最大幅と最小幅
+# for dist in range(1, 11):
+#     print(
+#         f'{int(60*periods_hrs*dist)} mins:',
+#         np.amin(past_data_df[
+#             f'close_price_pct_chg_{int(60*periods_hrs*dist)}_mins']),
+#         np.max(past_data_df[
+#             f'close_price_pct_chg_{int(60*periods_hrs*dist)}_mins'])
+#     )
+
+# edgeが出現する頻度
+# edge = 0.02
+# for dist in range(1, 11):
+#     print(
+#         f'{int(60*periods_hrs*dist)} mins:',
+#         (np.abs(past_data_df[
+#             f'close_price_pct_chg_{int(60*periods_hrs*dist)}_mins'
+#         ]) > edge).sum() / len(past_data_df[
+#             f'close_price_pct_chg_{int(60*periods_hrs*dist)}_mins'
+#         ])
+#     )
