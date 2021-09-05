@@ -14,14 +14,13 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import optuna
 import functools
-from utils import get_CURRENT_TIME_PATH
-from utils import read_train_data, set_X_y
+from utils import read_dataset, set_X_y
 from config import cnf_dict
 
 
 def split_test_over_time(df):
     yrs_lst = list(
-        range(cnf_dict['limited_term'].year, datetime.now().year + 1))
+        range(datetime(2016, 12, 31).year, datetime.now().year + 1))
     mths_lst = list(range(1, 13))
     tr = pd.DataFrame()
     ts = pd.DataFrame()
@@ -29,7 +28,7 @@ def split_test_over_time(df):
         for mth in mths_lst:
             start = datetime(yr, mth, 1)
             end = start + relativedelta(months=1)
-            df_temp = df[(df['日付'] >= start) & (df['日付'] < end)]
+            df_temp = df[(df['CloseTime'] >= start) & (df['CloseTime'] < end)]
             if len(df_temp) < 1 / cnf_dict['test_size']:
                 continue
             tr_temp, ts_temp = train_test_split(
@@ -245,7 +244,7 @@ def build_model(df, params, mth, model_type):
 
 
 def main():
-    df = read_train_data(mth, model_type)
+    df = read_dataset('dataset.csv')
     tr_vd, ts = split_test_over_time(df)
     if cnf_dict['CROSS_VALIDATION_TYPE'] == 'time_series':
         bst_hps = execute_time_cross_valid(
@@ -257,5 +256,4 @@ def main():
 
 
 if __name__ == '__main__':
-    CURRENT_CHECKPOINT_PATH, _ = get_CURRENT_TIME_PATH()
     main()

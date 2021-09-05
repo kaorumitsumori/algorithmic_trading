@@ -22,9 +22,8 @@ def get_ABSOLUTE_PATH():
     DIR_ROOT_PATH = os.getcwd()
     RAW_DATA_PATH = os.path.join(DIR_ROOT_PATH, 'Data', 'raw')
     PREPROCESS_DATA_PATH = os.path.join(DIR_ROOT_PATH, 'Data', 'preprocess')
-    os.makedirs(MTGES_DIR, exist_ok=True)
     CHECKPOINT_PATH = os.path.join(DIR_ROOT_PATH, 'checkpoint')
-    return RAW_DATA_PATH, PREPROCESS_DATA_PATH, MTGES_DIR, CHECKPOINT_PATH
+    return RAW_DATA_PATH, PREPROCESS_DATA_PATH, CHECKPOINT_PATH
 
 
 def make_CURRENT_TIME_PATH():
@@ -32,19 +31,6 @@ def make_CURRENT_TIME_PATH():
     CURRENT_TIME_PATH = pathlib.Path(CHECKPOINT_PATH, crrnt_time)
     CURRENT_TIME_PATH.mkdir()
     return CURRENT_TIME_PATH
-
-
-def get_CURRENT_TIME_PATH():
-    CHECKPOINT_LIST = []
-    for checkpoint in os.listdir(CHECKPOINT_PATH):
-        if not re.fullmatch(r'[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]+', checkpoint):
-            continue
-        CHECKPOINT_LIST.append(datetime.strptime(checkpoint, '%Y-%m-%d-%H-%M'))
-    CURRENT_CHECKPOINT_PATH = os.path.join(
-        CHECKPOINT_PATH, max(CHECKPOINT_LIST).strftime('%Y-%m-%d-%H-%M'))
-    CURRENT_PREDICTION_PATH = os.path.join(
-        CURRENT_CHECKPOINT_PATH, cnf_dict['prediction_dir'])
-    return CURRENT_CHECKPOINT_PATH, CURRENT_PREDICTION_PATH
 
 
 def read_dataset(file_name):
@@ -111,5 +97,4 @@ def setup_logger(file_path):
     return logger
 
 
-RAW_DATA_PATH, PREPROCESS_DATA_PATH, MTGES_DIR, CHECKPOINT_PATH = \
-    get_ABSOLUTE_PATH()
+RAW_DATA_PATH, PREPROCESS_DATA_PATH, CHECKPOINT_PATH = get_ABSOLUTE_PATH()
