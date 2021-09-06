@@ -20,9 +20,10 @@ from config import cnf_dict
 
 def get_ABSOLUTE_PATH():
     DIR_ROOT_PATH = os.getcwd()
-    RAW_DATA_PATH = os.path.join(DIR_ROOT_PATH, 'Data', 'raw')
-    PREPROCESS_DATA_PATH = os.path.join(DIR_ROOT_PATH, 'Data', 'preprocess')
-    CHECKPOINT_PATH = os.path.join(DIR_ROOT_PATH, 'checkpoint')
+    STRATEGY_PATH = os.path.join(DIR_ROOT_PATH, 'xgb_prediction')
+    RAW_DATA_PATH = os.path.join(STRATEGY_PATH, 'Data', 'raw')
+    PREPROCESS_DATA_PATH = os.path.join(STRATEGY_PATH, 'Data', 'preprocess')
+    CHECKPOINT_PATH = os.path.join(STRATEGY_PATH, 'checkpoint')
     return RAW_DATA_PATH, PREPROCESS_DATA_PATH, CHECKPOINT_PATH
 
 
@@ -41,6 +42,16 @@ def read_dataset(file_name):
     return df
 
 
+def read_train_data(file_name):
+    df = pd.read_csv(
+        make_file_path(PREPROCESS_DATA_PATH, file_name),
+        encoding='cp932',
+    )
+    df['CloseTime'] = pd.to_datetime(df['CloseTime'])
+    df.set_index('CloseTime', inplace=True)
+    return df
+
+
 def make_file_path(DIR_PATH, file_name):
     return os.path.join(DIR_PATH, file_name)
 
@@ -56,10 +67,10 @@ def export_dataframe_with_index(df, DIR_PATH, file_name):
 
 
 def set_X_y(train, test):
-    tr_X = train.drop('Target', axis=1)
-    ts_X = test.drop('Target', axis=1)
-    tr_y = train['Target']
-    ts_y = test['Target']
+    tr_X = train.drop(['alpha_occurrence', 'cl_pct_chg_coming_60_mins'], axis=1)
+    ts_X = test.drop(['alpha_occurrence', 'cl_pct_chg_coming_60_mins'], axis=1)
+    tr_y = train['alpha_occurrence']
+    ts_y = test['alpha_occurrence']
     return tr_X, ts_X, tr_y, ts_y
 
 
@@ -80,7 +91,7 @@ def get_log_target(df, mth):
 def check_df():
     columns_dict = cnf_dict['columns_dict']
     tr_checker = pa.DataFrameSchema(columns=columns_dict)
-    _ = columns_dict.pop('Target')
+    _ = columns_dict.pop('alpha_occurrence')
     prd_checker = pa.DataFrameSchema(columns=columns_dict)
     return tr_checker, prd_checker
 
