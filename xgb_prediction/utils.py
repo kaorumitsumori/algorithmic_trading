@@ -22,16 +22,30 @@ def get_ABSOLUTE_PATH():
     DIR_ROOT_PATH = os.getcwd()
     STRATEGY_PATH = os.path.join(DIR_ROOT_PATH, 'xgb_prediction')
     RAW_DATA_PATH = os.path.join(STRATEGY_PATH, 'Data', 'raw')
+    os.makedirs(RAW_DATA_PATH, exist_ok=True)
     PREPROCESS_DATA_PATH = os.path.join(STRATEGY_PATH, 'Data', 'preprocess')
+    os.makedirs(PREPROCESS_DATA_PATH, exist_ok=True)
     CHECKPOINT_PATH = os.path.join(STRATEGY_PATH, 'checkpoint')
+    os.makedirs(CHECKPOINT_PATH, exist_ok=True)
     return RAW_DATA_PATH, PREPROCESS_DATA_PATH, CHECKPOINT_PATH
 
 
 def make_CURRENT_TIME_PATH():
-    crrnt_time = datetime.now().strftime('%Y-%m-%d-%H-%M')
-    CURRENT_TIME_PATH = pathlib.Path(CHECKPOINT_PATH, crrnt_time)
-    CURRENT_TIME_PATH.mkdir()
+    current_time = datetime.now().strftime('%Y-%m-%d-%H-%M')
+    CURRENT_TIME_PATH = pathlib.Path(CHECKPOINT_PATH, current_time)
+    os.makedirs(CURRENT_TIME_PATH, exist_ok=True)
     return CURRENT_TIME_PATH
+
+
+def get_CURRENT_TIME_PATH():
+    CHECKPOINT_LIST = []
+    for checkpoint in os.listdir(CHECKPOINT_PATH):
+        if not re.fullmatch(r'[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]+', checkpoint):
+            continue
+        CHECKPOINT_LIST.append(datetime.strptime(checkpoint, '%Y-%m-%d-%H-%M'))
+    CURRENT_CHECKPOINT_PATH = os.path.join(
+        CHECKPOINT_PATH, max(CHECKPOINT_LIST).strftime('%Y-%m-%d-%H-%M'))
+    return CURRENT_CHECKPOINT_PATH
 
 
 def read_dataset(file_name):
@@ -69,8 +83,8 @@ def export_dataframe_with_index(df, DIR_PATH, file_name):
 def set_X_y(train, test):
     tr_X = train.drop(['alpha_occurrence', 'cl_pct_chg_coming_60_mins'], axis=1)
     ts_X = test.drop(['alpha_occurrence', 'cl_pct_chg_coming_60_mins'], axis=1)
-    tr_y = train['alpha_occurrence']
-    ts_y = test['alpha_occurrence']
+    tr_y = train['cl_pct_chg_coming_60_mins']
+    ts_y = test['cl_pct_chg_coming_60_mins']
     return tr_X, ts_X, tr_y, ts_y
 
 
@@ -109,3 +123,4 @@ def setup_logger(file_path):
 
 
 RAW_DATA_PATH, PREPROCESS_DATA_PATH, CHECKPOINT_PATH = get_ABSOLUTE_PATH()
+CURRENT_TIME_PATH = make_CURRENT_TIME_PATH()

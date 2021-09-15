@@ -22,7 +22,7 @@ CNF_DICT = {
             'QuoteVolume',
         ],
         'alpha':  0.0095,
-        'limited_term': datetime(2016, 12, 31),
+        'limited_term': datetime(2019, 12, 31),
         'test_size': 0.2,
         'valid_length': 3,
         'optuna_params': {
@@ -38,8 +38,8 @@ CNF_DICT = {
         },
         'num_boost_round': 500,
         'early_stopping_rounds': 15,
-        'n_trials': 100,
-        'n_splits': 5,
+        'n_trials': 20,#100
+        'n_splits': 3,
         'CROSS_VALIDATION_TYPE': 'time_series',
     }
 }

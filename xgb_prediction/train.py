@@ -14,7 +14,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import optuna
 import functools
-from utils import read_train_data, set_X_y
+from utils import get_CURRENT_TIME_PATH, read_train_data, set_X_y
 from config import cnf_dict
 
 
@@ -122,7 +122,7 @@ def optimize_hps_on_KFold(tr_vd_X, tr_vd_y, trial):
 
 
 def calc_rmse(prd_y, ts_y):
-    rmse_loss = np.sqrt(((prd_y - ts_y) ** 2).mean()[0])
+    rmse_loss = np.sqrt(((prd_y - ts_y) ** 2).mean())
     return rmse_loss
 
 
@@ -142,11 +142,11 @@ def test_bst_hps(tr_X, ts_X, tr_y, ts_y, params):
 def execute_time_cross_validation(tr_vd, ts):
     tr_start = cnf_dict['limited_term']
     latest_vd_start = datetime(
-        datetime.now().year, datetime.now().month, 1
+        datetime.now().year, datetime.now().month, datetime.now().day
     ) - relativedelta(days=cnf_dict['valid_length'])
     reslt_dict = {}
     for fold in range(cnf_dict['n_splits'], 0, -1):
-        vd_start = latest_vd_start - relativedelta(months=fold)
+        vd_start = latest_vd_start - relativedelta(days=fold)
         print('Now validating at ', vd_start)
         tr, vd = split_time_series_data(tr_vd, tr_start, vd_start)
         if vd.empty:
@@ -154,9 +154,10 @@ def execute_time_cross_validation(tr_vd, ts):
             continue
         tr_X, vd_X, tr_y, vd_y = set_X_y(tr, vd)
         study = optuna.create_study()
-        study.optimize(functools.partial(
-            optimize_hps, tr_X, vd_X, tr_y, vd_y
-        ), n_trials=cnf_dict['n_trials'])
+        study.optimize(
+            functools.partial(optimize_hps, tr_X, vd_X, tr_y, vd_y),
+            n_trials=cnf_dict['n_trials']
+        )
         best_hps_dict = study.best_params
         tr_X, ts_X, tr_y, ts_y = set_X_y(tr, ts)
         rmse_loss = test_bst_hps(
@@ -228,11 +229,11 @@ def build_model(df, params):
         'Feature　importance': importance_dict,
     }
     with open(os.path.join(
-            CURRENT_CHECKPOINT_PATH, f'{mth}MF_model_info_{model_type}.json'
+            CURRENT_CHECKPOINT_PATH, f'model_info.json'
     ), 'w') as f:
         json.dump(model_info_dict, f, indent=4, ensure_ascii=False)
     with open(os.path.join(
-            CURRENT_CHECKPOINT_PATH, f'{mth}MF_xgb_model_{model_type}.pkl'
+            CURRENT_CHECKPOINT_PATH, f'xgb_model.pkl'
     ), mode='wb') as f:
         pickle.dump(bst, f)
     plot_xgb_importance(bst)
@@ -249,4 +250,5 @@ def main():
 
 
 if __name__ == '__main__':
+    CURRENT_CHECKPOINT_PATH = get_CURRENT_TIME_PATH()
     main()

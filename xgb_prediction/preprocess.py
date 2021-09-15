@@ -54,7 +54,7 @@ raw_past_data_df = generate_dataset()
 past_data_df = add_past_cl_pct_chg(raw_past_data_df)
 past_data_df = add_target(past_data_df)
 
-# past_data_df.head(20).to_csv('past_data_df.csv')
+past_data_df.head(200).to_csv('past_data_df.csv')
 past_data_df.to_csv('dataset.csv')
 
 
