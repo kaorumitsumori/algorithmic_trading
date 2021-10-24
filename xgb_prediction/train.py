@@ -18,7 +18,7 @@ from utils import get_CURRENT_TIME_PATH, read_train_data, set_X_y
 from config import cnf_dict
 
 
-def split_test_over_time(df):
+def split_into_train_test(df):
     yrs_lst = list(
         range(datetime(2016, 12, 31).year, datetime.now().year + 1))
     mths_lst = list(range(1, 13))
@@ -38,9 +38,17 @@ def split_test_over_time(df):
     return tr, ts
 
 
+def split_timeseries_into_train_test(df):
+    for va_period in va_period_list:
+        is_tr = df['period'] < va_period
+        is_va = df['period'] == va_period
+        tr_x, va_x = train_x[is_tr], train_x[is_va]
+        tr_y, va_y = train_y[is_tr], train_y[is_va]
+    return tr, ts
+
+
 def split_time_series_data(tr_vd, tr_start, vd_start):
     tr_end = vd_start
-    vd_start = tr_end
     vd_end = vd_start + relativedelta(months=cnf_dict['valid_length'])
     tr = tr_vd[(tr_vd.index >= tr_start) & (tr_vd.index < tr_end)]
     vd = tr_vd[(tr_vd.index >= vd_start) & (tr_vd.index < vd_end)]
@@ -139,7 +147,7 @@ def test_bst_hps(tr_X, ts_X, tr_y, ts_y, params):
     return rmse_loss
 
 
-def execute_time_cross_validation(tr_vd, ts):
+def exec_time_cross_validation(tr_vd, ts):
     tr_start = cnf_dict['limited_term']
     latest_vd_start = datetime(
         datetime.now().year, datetime.now().month, datetime.now().day
@@ -153,12 +161,23 @@ def execute_time_cross_validation(tr_vd, ts):
             print('Pass, empty valid data.\n')
             continue
         tr_X, vd_X, tr_y, vd_y = set_X_y(tr, vd)
-        study = optuna.create_study()
-        study.optimize(
-            functools.partial(optimize_hps, tr_X, vd_X, tr_y, vd_y),
-            n_trials=cnf_dict['n_trials']
-        )
-        best_hps_dict = study.best_params
+        # study = optuna.create_study()
+        # study.optimize(
+        #     functools.partial(optimize_hps, tr_X, vd_X, tr_y, vd_y),
+        #     n_trials=cnf_dict['n_trials']
+        # )
+        # best_hps_dict = study.best_params
+        ###################
+        best_hps_dict = {
+            "max_depth": 6,
+            "min_child_weight": 5,
+            "gamma": 0.75,
+            "subsample": 0.625,
+            "colsample_bytree": 0.75,
+            "lambda": 0.04,
+            "eta": 0.01,
+        }
+        ###################
         tr_X, ts_X, tr_y, ts_y = set_X_y(tr, ts)
         rmse_loss = test_bst_hps(
             tr_X, ts_X, tr_y, ts_y, best_hps_dict)
@@ -175,7 +194,7 @@ def execute_time_cross_validation(tr_vd, ts):
     return bst_hps_dict
 
 
-def execute_cross_validation(tr_vd, ts):
+def exec_cross_validation(tr_vd, ts):
     tr_vd_X, ts_X, tr_vd_y, ts_y = set_X_y(tr_vd, ts)
     study = optuna.create_study()
     study.optimize(functools.partial(
@@ -241,11 +260,11 @@ def build_model(df, params):
 
 def main():
     df = read_train_data('dataset.csv')
-    tr_vd, ts = split_test_over_time(df)
+    tr_vd, ts = split_into_train_test(df)
     if cnf_dict['CROSS_VALIDATION_TYPE'] == 'time_series':
-        bst_hps = execute_time_cross_validation(tr_vd, ts)
+        bst_hps = exec_time_cross_validation(tr_vd, ts)
     if cnf_dict['CROSS_VALIDATION_TYPE'] == 'kfold':
-        bst_hps = execute_cross_validation(tr_vd, ts)
+        bst_hps = exec_cross_validation(tr_vd, ts)
     build_model(df, bst_hps)
 
 
