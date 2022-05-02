@@ -2,6 +2,7 @@ import pandas as pd
 import ccxt
 from crypto_data_fetcher import FtxFetcher
 import talib
+import asciichart
 from config import cnf_dict
 
 
@@ -48,6 +49,7 @@ def calc_features(df):
     df['PLUS_DM'] = talib.PLUS_DM(hi, lo, timeperiod=14)
     df['RSI'] = talib.RSI(cl, timeperiod=14)
     df['STOCH_slowk'], df['STOCH_slowd'] = talib.STOCH(
+
         hi, lo, cl, fastk_period=5, slowk_period=3,
         slowk_matype=0, slowd_period=3, slowd_matype=0
     )
@@ -84,20 +86,62 @@ def calc_features(df):
     return df
 
 
+def print_chart(exchange, symbol, timeframe):
+    print("\n" + exchange.name + ' ' + symbol + ' ' + timeframe + ' chart')
+
+    # get a list of ohlcv candles
+    ohlcv = exchange.fetch_ohlcv(symbol, timeframe)
+
+    # each ohlcv candle is a list of [timestamp, open, high, low, close, volume]
+    df_ohlcv = pd.DataFrame(
+        ohlcv, columns=[
+            'timestamp','op','hi','lo','cl','vl']).set_index('timestamp')
+
+
+    index = 4  # use close price from each ohlcv candle
+    # get the ohlCv (closing price, index == 4)
+    series = [x[index] for x in ohlcv]
+
+    height = 15
+    length = 80
+    # # print the chart
+    # print("\n" + asciichart.plot(series[-length:], {'height': height}))  # print the chart
+
+    last = ohlcv[len(ohlcv) - 1][index]  # last closing price
+
+    # print last closing price
+    print("\n" + exchange.name + " ₿ = $" + str(last) + "\n")
+    return df_ohlcv
+
+
 def main():
-    ftx = ccxt.ftx()
-    fetcher = FtxFetcher(ccxt_client=ftx)
+    # ftx = ccxt.ftx()
+    # fetcher = FtxFetcher(ccxt_client=ftx)
+    binance = ccxt.binance()
+    symbol = 'BTC/USDT'
+    timeframe = '1m'
 
-    df = fetcher.fetch_ohlcv(market='BTC-PERP', interval_sec=5*60)
 
-    df.to_pickle('df_ohlcv.pkl')
-    df = df.dropna()
-    df = df.reset_index()
-    df = df[
-        df['timestamp'] < pd.to_datetime('2021-01-01 00:00:00Z')
-    ]  # テスト期間を残せるように少し前で設定
-    df = calc_features(df)
-    df.to_pickle('df_features.pkl')
+
+    ohlcv = print_chart(binance, symbol, timeframe)
+    height = 15
+
+    # df = fetcher.fetch_ohlcv(market='BTC-PERP', interval_sec=5*60)
+
+    # df.to_pickle('df_ohlcv.pkl')
+    # df = df.dropna()
+    # df = df.reset_index()
+    # df = df[df['timestamp'] < pd.to_datetime(
+    #     '2021-01-01 00:00:00Z')]  # テスト期間を残せるように少し前で設定
+    # df = calc_features(df)
+    # df.to_pickle('df_features.pkl')
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
