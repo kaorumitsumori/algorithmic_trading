@@ -1,34 +1,31 @@
-import pandas as pd
-import ccxt
-from crypto_data_fetcher import FtxFetcher
+from pandas import read_pickle
 import talib
-import asciichart
-from config import cnf_dict
 
 
-def calc_features(df):
+
+def calc_talib_features(df):
     op = df['op']
     hi = df['hi']
     lo = df['lo']
     cl = df['cl']
-    vl = df['volume']
-    hilo = (hi + lo) / 2
+    vl = df['vl']
+    hl = (hi + lo) / 2
     df['BBANDS_upperband'], df['BBANDS_middleband'], df['BBANDS_lowerband'] = \
         talib.BBANDS(cl, timeperiod=5, nbdevup=2, nbdevdn=2, matype=0)
-    df['BBANDS_upperband'] -= hilo
-    df['BBANDS_middleband'] -= hilo
-    df['BBANDS_lowerband'] -= hilo
-    df['DEMA'] = talib.DEMA(cl, timeperiod=30) - hilo
-    df['EMA'] = talib.EMA(cl, timeperiod=30) - hilo
-    df['HT_TRENDLINE'] = talib.HT_TRENDLINE(cl) - hilo
-    df['KAMA'] = talib.KAMA(cl, timeperiod=30) - hilo
-    df['MA'] = talib.MA(cl, timeperiod=30, matype=0) - hilo
-    df['MIDPOINT'] = talib.MIDPOINT(cl, timeperiod=14) - hilo
-    df['SMA'] = talib.SMA(cl, timeperiod=30) - hilo
-    df['T3'] = talib.T3(cl, timeperiod=5, vfactor=0) - hilo
-    df['TEMA'] = talib.TEMA(cl, timeperiod=30) - hilo
-    df['TRIMA'] = talib.TRIMA(cl, timeperiod=30) - hilo
-    df['WMA'] = talib.WMA(cl, timeperiod=30) - hilo
+    df['BBANDS_upperband'] -= hl
+    df['BBANDS_middleband'] -= hl
+    df['BBANDS_lowerband'] -= hl
+    df['DEMA'] = talib.DEMA(cl, timeperiod=30) - hl
+    df['EMA'] = talib.EMA(cl, timeperiod=30) - hl
+    df['HT_TRENDLINE'] = talib.HT_TRENDLINE(cl) - hl
+    df['KAMA'] = talib.KAMA(cl, timeperiod=30) - hl
+    df['MA'] = talib.MA(cl, timeperiod=30, matype=0) - hl
+    df['MIDPOINT'] = talib.MIDPOINT(cl, timeperiod=14) - hl
+    df['SMA'] = talib.SMA(cl, timeperiod=30) - hl
+    df['T3'] = talib.T3(cl, timeperiod=5, vfactor=0) - hl
+    df['TEMA'] = talib.TEMA(cl, timeperiod=30) - hl
+    df['TRIMA'] = talib.TRIMA(cl, timeperiod=30) - hl
+    df['WMA'] = talib.WMA(cl, timeperiod=30) - hl
     df['ADX'] = talib.ADX(hi, lo, cl, timeperiod=14)
     df['ADXR'] = talib.ADXR(hi, lo, cl, timeperiod=14)
     df['APO'] = talib.APO(cl, fastperiod=12, slowperiod=26, matype=0)
@@ -49,7 +46,6 @@ def calc_features(df):
     df['PLUS_DM'] = talib.PLUS_DM(hi, lo, timeperiod=14)
     df['RSI'] = talib.RSI(cl, timeperiod=14)
     df['STOCH_slowk'], df['STOCH_slowd'] = talib.STOCH(
-
         hi, lo, cl, fastk_period=5, slowk_period=3,
         slowk_matype=0, slowd_period=3, slowd_matype=0
     )
@@ -82,66 +78,13 @@ def calc_features(df):
         cl, timeperiod=14) - cl
     df['LINEARREG_SLOPE'] = talib.LINEARREG_SLOPE(cl, timeperiod=14)
     df['STDDEV'] = talib.STDDEV(cl, timeperiod=5, nbdev=1)
-    df = df.set_index('timestamp')
     return df
 
 
-def print_chart(exchange, symbol, timeframe):
-    print("\n" + exchange.name + ' ' + symbol + ' ' + timeframe + ' chart')
-
-    # get a list of ohlcv candles
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe)
-
-    # each ohlcv candle is a list of [timestamp, open, high, low, close, volume]
-    df_ohlcv = pd.DataFrame(
-        ohlcv, columns=[
-            'timestamp','op','hi','lo','cl','vl']).set_index('timestamp')
-
-
-    index = 4  # use close price from each ohlcv candle
-    # get the ohlCv (closing price, index == 4)
-    series = [x[index] for x in ohlcv]
-
-    height = 15
-    length = 80
-    # # print the chart
-    # print("\n" + asciichart.plot(series[-length:], {'height': height}))  # print the chart
-
-    last = ohlcv[len(ohlcv) - 1][index]  # last closing price
-
-    # print last closing price
-    print("\n" + exchange.name + " ₿ = $" + str(last) + "\n")
-    return df_ohlcv
-
-
 def main():
-    # ftx = ccxt.ftx()
-    # fetcher = FtxFetcher(ccxt_client=ftx)
-    binance = ccxt.binance()
-    symbol = 'BTC/USDT'
-    timeframe = '1m'
-
-
-
-    ohlcv = print_chart(binance, symbol, timeframe)
-    height = 15
-
-    # df = fetcher.fetch_ohlcv(market='BTC-PERP', interval_sec=5*60)
-
-    # df.to_pickle('df_ohlcv.pkl')
-    # df = df.dropna()
-    # df = df.reset_index()
-    # df = df[df['timestamp'] < pd.to_datetime(
-    #     '2021-01-01 00:00:00Z')]  # テスト期間を残せるように少し前で設定
-    # df = calc_features(df)
-    # df.to_pickle('df_features.pkl')
-
-
-
-
-
-
-
+    dataset = read_pickle('dataset.pkl')
+    features = calc_talib_features(dataset)
+    features.to_pickle('features.pkl')
 
 
 if __name__ == '__main__':

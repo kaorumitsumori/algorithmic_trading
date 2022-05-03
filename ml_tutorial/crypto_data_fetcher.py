@@ -31,7 +31,9 @@ class FtxFetcher:
         self.logger = logger
         self.ccxt_client = ccxt_client
 
-    def fetch_ohlcv(self, df=None, start_time=None, interval_sec=None, market=None, price_type=None):
+    def fetch_ohlcv(
+            self, df=None, start_time=None, interval_sec=None,
+            market=None, price_type=None):
         limit = 5000
 
         if start_time:
