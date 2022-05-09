@@ -5,7 +5,7 @@ from config import cnf_dict
 
 
 
-def get_price_histry():
+def get_ohlcv_histry():
     exchange = ccxt.binance()
     symbol = 'BTC/USDT'
     timeframe = '1m'
@@ -45,7 +45,7 @@ def main():
     # df = df[ # テスト期間を残せるように少し前で設定
     #     df['timestamp'] < pd.to_datetime('2021-01-01 00:00:00Z')]
 
-    ohlcv = get_price_histry()
+    ohlcv = get_ohlcv_histry()
     ohlcv.dropna(inplace=True)
     # df.to_pickle('df_ohlcv.pkl')
     # df = df[
